@@ -1,6 +1,29 @@
-# NGINX Configuration
+# Nginx Primer
 
-### Verify nginx configuration
+### Install Nginx
+
+```
+brew install nginx
+```
+
+### Start Nginx
+
+```
+sudo nginx
+```
+
+### Stop Nginx
+
+```
+sudo nginx -s stop
+```
+
+### Restart Nginx
+```
+sudo nginx -s stop && sudo nginx
+```
+
+### Verify configuration
 
 ```
 sudo nginx -t
@@ -12,9 +35,10 @@ nginx: configuration file /usr/local/etc/nginx/nginx.conf test is successful
 ### Sample nginx configuration
 There are two server configurations here:
 
-A reverse proxy that routes requests arrving on port 80 to a docker container listening on port 8080 of the host machine. Note that port 8080 of the host machine is mapped to port 80 of the docker container
+* A reverse proxy that routes requests arrving on port 80 to a docker container listening on port 8080 of the host machine. Note that port 8080 of the host machine is mapped to port 80 of the docker container
 
-A load balanced configuration that routes traffic arriving on port 81 to 4 docker containers listening on port range 8081-8084. Notice that we are using a log_format directive "fishball" in the access_log directive to customise the output of the nginx access log. 
+* A load balanced configuration that routes traffic arriving on port 81 to 4 docker containers listening on port range 8081-8084.
+  
 
 ```
 worker_processes  1;
@@ -71,7 +95,7 @@ http {
 
 ```
 
-Note that the $upstream_addr specified in the log_format directive allows us to see exactly which docker container each request is being routed to. See [Module ngx_http_upstream_module](http://nginx.org/en/docs/http/ngx_http_upstream_module.html)
+Note that the $upstream_addr specified in the custom "fishball" log_format directive allows us to see exactly which docker container each request is being routed to in the access log. See [Module ngx_http_upstream_module](http://nginx.org/en/docs/http/ngx_http_upstream_module.html)
 
 ```
 127.0.0.1 - - [03/Jul/2019:13:25:58 +0800] "GET / HTTP/1.1" 200 1455 "-" "curl/7.63.0" "-" "127.0.0.1:8081"
@@ -85,7 +109,8 @@ Note that the $upstream_addr specified in the log_format directive allows us to 
 
 ```
 
-It is also important to note that when we access http://localhost:81, four individual GET requests are observed in the logs and each of these GET requests are routed to different docker containers:
+### Load balancing in NGINX
+It is also important to note that when we access http://localhost:81, four GET requests are observed in the logs. However, upon closer inspection, each of these GET requests are routed to different docker containers:
 
 ```
 127.0.0.1 - - [04/Jul/2019:09:12:39 +0800] "GET / HTTP/1.1" 200 1455 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:67.0) Gecko/20100101 Firefox/67.0" "-" "127.0.0.1:8083" "0.000" "0.005"
@@ -94,4 +119,4 @@ It is also important to note that when we access http://localhost:81, four indiv
 127.0.0.1 - - [04/Jul/2019:09:12:39 +0800] "GET /favicon.ico HTTP/1.1" 200 1150 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:67.0) Gecko/20100101 Firefox/67.0" "-" "127.0.0.1:8082" "0.000" "0.006"
 ```
 
-To fix this we probably have to rely on NGINX Plus' [Session Persistence](https://www.nginx.com/products/nginx/load-balancing/) feature or simply pick a more appropriate tool for load balancing like HA Proxy.
+To fix this we have to rely on NGINX Plus' [Session Persistence](https://www.nginx.com/products/nginx/load-balancing/) feature or pick a more appropriate tool like HA Proxy.
