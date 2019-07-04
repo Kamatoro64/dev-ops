@@ -1,0 +1,56 @@
+# HA Proxy Primer
+
+### Install HA Proxy
+```
+brew install haproxy
+```
+
+### Start HA Proxy
+```
+haproxy -f haproxy.cfg
+```
+
+### Sample HA Proxy configuration with session persistence
+
+```
+global
+  log 127.0.0.1:9200 local0 debug
+  maxconn 4096
+  pidfile ~/tmp/haproxy-queue.pid
+
+defaults
+  log global
+  log 127.0.0.1 local0
+  log 127.0.0.1 local1 notice 
+  mode http
+  timeout connect 300000
+  timeout client 300000
+  timeout server 300000
+  maxconn 2000
+  option redispatch
+  retries 3
+  option httpclose
+  option httplog
+  option forwardfor
+  option httpchk HEAD / HTTP/1.0
+
+frontend haproxynode
+  bind *:9000
+  default_backend backendnodes
+
+backend backendnodes
+  balance roundrobin
+  cookie SERVERID insert indirect nocache
+  option forwardfor
+  server fishball-1 localhost:8081 check cookie s1
+  server fishball-2 localhost:8082 check cookie s2
+  server fishball-3 localhost:8083 check cookie s3
+  server fishball-4 localhost:8084 check cookie s4
+
+listen stats
+    bind :9100
+    stats enable
+    stats uri /
+    stats hide-version
+    stats auth admin:admin
+```
